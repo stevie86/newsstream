@@ -1,0 +1,11 @@
+name: newsstream
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+    - dspy
+    - beautifulsoup4
+    - requests
+    - pandas
