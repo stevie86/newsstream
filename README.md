@@ -32,6 +32,12 @@ This is a compact news aggregator that fetches news from various RSS sources, de
    ```
    Note: This will install all necessary dependencies, including lxml with HTML cleaning support.
 
+3. Download required NLTK data:
+   ```
+   python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('punkt_tab')"
+   ```
+   This step is crucial for the language detection and topic extraction features to work correctly.
+
 ## Configuration
 
 1. Run the interactive setup script:
