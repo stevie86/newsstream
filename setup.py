@@ -43,4 +43,11 @@ def setup_config():
     print("Configuration saved to config.json")
 
 if __name__ == "__main__":
-    setup_config()
+    try:
+        setup_config()
+    except KeyboardInterrupt:
+        print("\nSetup interrupted. Configuration not saved.")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+    else:
+        print("Setup completed successfully.")
