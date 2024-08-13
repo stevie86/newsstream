@@ -5,15 +5,15 @@ This is a compact news aggregator that fetches news from various RSS sources, de
 ## Features
 
 - Fetches news from multiple RSS feeds
-- Detects language of news items
-- Extracts topics from news items
-- Generates tags for news items using DSPy
-- Provides summarization of news items using DSPy
-- Stores news items in an SQLite database with language, topic, tags, and summary information
+- Detects language of news items (using DSPy placeholder)
+- Extracts topics from news items (using DSPy placeholder)
+- Stores news items in an SQLite database with language and topic information
 - Configurable via JSON file
 - Interactive setup script for easy configuration
 - Avoids duplicate entries
 - Runs continuously with a configurable update interval
+
+Note: The current implementation uses placeholder functions for DSPy-based language detection and topic extraction. These placeholders will be replaced with actual DSPy functionality in future updates.
 
 ## Requirements
 
