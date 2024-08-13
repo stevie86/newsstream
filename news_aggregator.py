@@ -97,7 +97,7 @@ def insert_or_update_news_item(conn, item, source):
     try:
         description = getattr(item, 'description', '')
         language = detect_language(item.title + ' ' + description)
-        topics = extract_topics(item.title + ' ' + description)
+        topics = [extract_topic(item.title + ' ' + description)]
         
         ic(item.title, source, language, topics)
         
@@ -135,7 +135,7 @@ def fetch_and_store_news(conn, sources):
         feed = feedparser.parse(source['url'])
         ic(f"Found {len(feed.entries)} entries")
         for entry in feed.entries:
-            insert_news_item(conn, entry, source['name'])
+            insert_or_update_news_item(conn, entry, source['name'])
 
 def main():
     config = load_config('config.json')
