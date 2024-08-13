@@ -1,12 +1,12 @@
 import dspy
-from dspy.retrieve.ollama_retrieve import OllamaRetrieve
+from dspy.backends.ollama import OllamaBackend
 
 def initialize_dspy(model_name="mistral:latest"):
     """
     Initialize DSPy with the specified model.
     """
-    ollama = OllamaRetrieve(model=model_name)
-    dspy.settings.configure(lm=ollama)
+    ollama = OllamaBackend(model=model_name)
+    dspy.configure(lm=ollama)
 
 class TopicExtractor(dspy.Signature):
     """Extract the main topic from a given text."""
