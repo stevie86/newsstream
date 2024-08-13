@@ -6,10 +6,14 @@ import time
 from langdetect import detect
 from newspaper import Article
 import nltk
+from icecream import ic
 
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('punkt_tab')
+
+# Configure icecream
+ic.configureOutput(prefix='DEBUG | ')
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
@@ -56,22 +60,24 @@ def insert_news_item(conn, item, source):
         language = detect_language(item.title + ' ' + description)
         topic = extract_topic(item.title + ' ' + description)
         
+        ic(item.title, source, language, topic)
+        
         conn.execute('''INSERT INTO news_items (title, link, description, pub_date, source, language, topic)
                         VALUES (?, ?, ?, ?, ?, ?, ?)''',
                      (item.title, item.link, description,
                       item.published, source, language, topic))
         conn.commit()
     except sqlite3.IntegrityError:
-        # Skip duplicate entries
-        pass
+        ic(f"Skipping duplicate entry: {item.title}")
     except AttributeError as e:
-        print(f"Error processing item: {e}")
-        # Optionally, you can print the item to see what attributes are available
-        # print(f"Item attributes: {vars(item)}")
+        ic(f"Error processing item: {e}")
+        ic(f"Item attributes: {vars(item)}")
 
 def fetch_and_store_news(conn, sources):
     for source in sources:
+        ic(f"Fetching news from: {source['name']}")
         feed = feedparser.parse(source['url'])
+        ic(f"Found {len(feed.entries)} entries")
         for entry in feed.entries:
             insert_news_item(conn, entry, source['name'])
 
@@ -81,12 +87,17 @@ def main():
     sources = config['sources']
     update_interval = config['update_interval']
 
+    ic(f"Database path: {db_path}")
+    ic(f"Number of sources: {len(sources)}")
+    ic(f"Update interval: {update_interval} seconds")
+
     conn = sqlite3.connect(db_path)
     create_table(conn)
 
     while True:
-        print(f"Fetching news at {datetime.now()}")
+        ic(f"Fetching news at {datetime.now()}")
         fetch_and_store_news(conn, sources)
+        ic(f"Sleeping for {update_interval} seconds")
         time.sleep(update_interval)
 
 if __name__ == "__main__":
