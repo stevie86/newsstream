@@ -46,6 +46,16 @@ def create_table(conn):
                      topics TEXT,
                      last_updated TEXT)''')
     
+    # Add the last_updated column if it doesn't exist
+    try:
+        conn.execute("ALTER TABLE news_items ADD COLUMN last_updated TEXT")
+        logger.info("Added 'last_updated' column to news_items table")
+    except sqlite3.OperationalError as e:
+        if "duplicate column name" in str(e):
+            logger.info("'last_updated' column already exists")
+        else:
+            logger.error(f"Error adding 'last_updated' column: {e}")
+    
     # Create a table to store the database version
     conn.execute('''CREATE TABLE IF NOT EXISTS db_version
                     (version INTEGER)''')
@@ -89,7 +99,17 @@ def check_and_update_db_structure(conn, db_path):
                 if "duplicate column name" in str(e):
                     logger.info("'topics' column already exists")
                 else:
-                    raise
+                    logger.error(f"Error adding 'topics' column: {e}")
+            
+            # Add the 'last_updated' column if it doesn't exist
+            try:
+                conn.execute("ALTER TABLE news_items ADD COLUMN last_updated TEXT")
+                logger.info("Added 'last_updated' column to news_items table")
+            except sqlite3.OperationalError as e:
+                if "duplicate column name" in str(e):
+                    logger.info("'last_updated' column already exists")
+                else:
+                    logger.error(f"Error adding 'last_updated' column: {e}")
         
         # Update the version in the database
         conn.execute("UPDATE db_version SET version = ?", (DB_VERSION,))
