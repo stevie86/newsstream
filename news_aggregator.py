@@ -9,6 +9,7 @@ import nltk
 
 nltk.download('punkt')
 nltk.download('stopwords')
+nltk.download('punkt_tab')
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
