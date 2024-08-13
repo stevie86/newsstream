@@ -3,18 +3,20 @@ import sqlite3
 import feedparser
 from datetime import datetime
 import time
-from datetime import datetime
 from langdetect import detect
-from newspaper import Article
 import nltk
 from icecream import ic
+import os
+import shutil
 
-nltk.download('punkt')
-nltk.download('stopwords')
-nltk.download('punkt_tab')
+nltk.download('punkt', quiet=True)
+nltk.download('stopwords', quiet=True)
 
 # Configure icecream
 ic.configureOutput(prefix='DEBUG | ')
+
+# Database version
+DB_VERSION = 1
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
@@ -29,7 +31,43 @@ def create_table(conn):
                      pub_date TEXT,
                      source TEXT,
                      language TEXT,
-                     topic TEXT)''')
+                     topics TEXT,
+                     last_updated TEXT)''')
+    
+    # Create a table to store the database version
+    conn.execute('''CREATE TABLE IF NOT EXISTS db_version
+                    (version INTEGER)''')
+    
+    # Check if version exists, if not, insert it
+    cursor = conn.cursor()
+    cursor.execute("SELECT version FROM db_version")
+    if not cursor.fetchone():
+        cursor.execute("INSERT INTO db_version (version) VALUES (?)", (DB_VERSION,))
+    conn.commit()
+
+def backup_database(db_path):
+    backup_path = f"{db_path}.bak"
+    shutil.copy2(db_path, backup_path)
+    ic(f"Database backed up to {backup_path}")
+
+def check_and_update_db_structure(conn, db_path):
+    cursor = conn.cursor()
+    cursor.execute("SELECT version FROM db_version")
+    current_version = cursor.fetchone()[0]
+    
+    if current_version < DB_VERSION:
+        ic(f"Updating database from version {current_version} to {DB_VERSION}")
+        backup_database(db_path)
+        
+        # Perform necessary updates based on version differences
+        if current_version == 1:
+            # Example: Add a new column
+            conn.execute("ALTER TABLE news_items ADD COLUMN new_column TEXT")
+        
+        # Update the version in the database
+        conn.execute("UPDATE db_version SET version = ?", (DB_VERSION,))
+        conn.commit()
+        ic("Database structure updated successfully")
 
 def detect_language(text):
     try:
@@ -55,32 +93,41 @@ def extract_topic(text):
     # Return the most common word as the topic
     return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
 
-def insert_news_item(conn, item, source):
+def insert_or_update_news_item(conn, item, source):
     try:
         description = getattr(item, 'description', '')
         language = detect_language(item.title + ' ' + description)
-        topic = extract_topic(item.title + ' ' + description)
+        topics = extract_topics(item.title + ' ' + description)
         
-        ic(item.title, source, language, topic)
+        ic(item.title, source, language, topics)
         
-        # Check if 'published' attribute exists, use a default if not
         pub_date = getattr(item, 'published', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         
-        conn.execute('''INSERT INTO news_items (title, link, description, pub_date, source, language, topic)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                     (item.title, item.link, description,
-                      pub_date, source, language, topic))
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM news_items WHERE link = ?", (item.link,))
+        existing_item = cursor.fetchone()
+        
+        if existing_item:
+            conn.execute('''UPDATE news_items 
+                            SET title = ?, description = ?, pub_date = ?, 
+                                source = ?, language = ?, topics = ?, last_updated = ?
+                            WHERE link = ?''',
+                         (item.title, description, pub_date, source, 
+                          language, ','.join(topics), current_time, item.link))
+            ic(f"Updated existing item: {item.title}")
+        else:
+            conn.execute('''INSERT INTO news_items 
+                            (title, link, description, pub_date, source, language, topics, last_updated)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (item.title, item.link, description, pub_date, 
+                          source, language, ','.join(topics), current_time))
+            ic(f"Inserted new item: {item.title}")
+        
         conn.commit()
-        ic(f"Successfully inserted: {item.title}")
-    except sqlite3.IntegrityError:
-        ic(f"Skipping duplicate entry: {item.title}")
     except AttributeError as e:
         ic(f"Error processing item: {e}")
         ic(f"Item attributes: {vars(item)}")
-        # Log all available attributes
-        for attr in dir(item):
-            if not attr.startswith('__'):
-                ic(f"{attr}: {getattr(item, attr, 'N/A')}")
 
 def fetch_and_store_news(conn, sources):
     for source in sources:
@@ -102,6 +149,7 @@ def main():
 
     conn = sqlite3.connect(db_path)
     create_table(conn)
+    check_and_update_db_structure(conn, db_path)
 
     while True:
         ic(f"Fetching news at {datetime.now()}")
