@@ -7,7 +7,9 @@ This is a compact news aggregator that fetches news from various RSS sources, de
 - Fetches news from multiple RSS feeds
 - Detects language of news items
 - Extracts topics from news items
-- Stores news items in an SQLite database with language and topic information
+- Generates tags for news items using DSPy
+- Provides summarization of news items using DSPy
+- Stores news items in an SQLite database with language, topic, tags, and summary information
 - Configurable via JSON file
 - Interactive setup script for easy configuration
 - Avoids duplicate entries
@@ -16,7 +18,7 @@ This is a compact news aggregator that fetches news from various RSS sources, de
 ## Requirements
 
 - Python 3.6+
-- Libraries: feedparser, langdetect, newspaper3k, nltk, requests, lxml[html_clean]
+- Libraries: feedparser, langdetect, newspaper3k, nltk, requests, lxml[html_clean], dspy-ai
 
 ## Installation
 
@@ -30,13 +32,52 @@ This is a compact news aggregator that fetches news from various RSS sources, de
    ```
    pip install -r requirements.txt
    ```
-   Note: This will install all necessary dependencies, including lxml with HTML cleaning support.
+   Note: This will install all necessary dependencies, including lxml with HTML cleaning support and DSPy.
 
 3. Download required NLTK data:
    ```
    python -c "import nltk; nltk.download('punkt'); nltk.download('stopwords'); nltk.download('punkt_tab')"
    ```
    This step is crucial for the language detection and topic extraction features to work correctly.
+
+4. Set up DSPy:
+   - You'll need to configure DSPy with an API key or other necessary configurations. Refer to the DSPy documentation for specific setup instructions.
+
+## LLM Setup for DSPy
+
+DSPy supports various Language Models (LLMs). Here are some suggestions for setting up local LLMs using Ollama on both Windows and Linux:
+
+### Ollama Setup
+
+1. Install Ollama:
+   - For Windows: Download and install from [Ollama's official website](https://ollama.ai/download)
+   - For Linux: Run the following command:
+     ```
+     curl https://ollama.ai/install.sh | sh
+     ```
+
+2. Pull a model (e.g., llama2):
+   ```
+   ollama pull llama2
+   ```
+
+3. In your `dspy_utils.py` file, configure DSPy to use Ollama:
+   ```python
+   import dspy
+   from dspy.backends.ollama import OllamaBackend
+
+   ollama = OllamaBackend(model="llama2")
+   dspy.configure(lm=ollama)
+   ```
+
+### Suggested Local LLMs
+
+1. llama2: A powerful and versatile model suitable for various NLP tasks.
+2. mistral: Known for its efficiency and performance.
+3. vicuna: A fine-tuned version of LLaMA, optimized for dialogue and general text generation.
+4. orca-mini: A smaller model suitable for systems with limited resources.
+
+To use these models, simply replace "llama2" in the Ollama pull command and DSPy configuration with the desired model name.
 
 ## Configuration
 
@@ -63,7 +104,7 @@ This is a compact news aggregator that fetches news from various RSS sources, de
    python news_aggregator.py
    ```
 
-The script will continuously fetch news from the specified sources, detect the language and topic of each item, and store them in the SQLite database.
+The script will continuously fetch news from the specified sources, detect the language and topic of each item, generate tags and summaries using DSPy, and store them in the SQLite database.
 
 ## Testing
 
@@ -98,6 +139,7 @@ Major releases will be merged into the main branch periodically.
 - Implement a search functionality to find news items by keywords
 - Add support for exporting news items in various formats
 - Implement user preferences for filtering news items based on topics or sources
+- Explore advanced DSPy features for improved topic extraction and summarization
 
 ## Contributing
 
