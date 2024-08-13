@@ -9,6 +9,7 @@ import os
 import shutil
 import logging
 from logging.handlers import RotatingFileHandler
+from dspy_utils import dspy_extract_topic, dspy_detect_language
 
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
@@ -118,27 +119,28 @@ def check_and_update_db_structure(conn, db_path):
 
 def detect_language(text):
     try:
-        return detect(text)
+        return dspy_detect_language(text)
     except:
-        return 'unknown'
+        # Fallback to the original method if DSPy fails
+        try:
+            return detect(text)
+        except:
+            return 'unknown'
 
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
 
 def extract_topic(text):
-    # Tokenize the text
-    tokens = word_tokenize(text.lower())
-    
-    # Remove stopwords
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
-    
-    # Count word frequencies
-    word_freq = Counter(tokens)
-    
-    # Return the most common word as the topic
-    return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
+    try:
+        return dspy_extract_topic(text)
+    except:
+        # Fallback to the original method if DSPy fails
+        tokens = word_tokenize(text.lower())
+        stop_words = set(stopwords.words('english'))
+        tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
+        word_freq = Counter(tokens)
+        return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
 
 def insert_or_update_news_item(conn, item, source):
     try:
