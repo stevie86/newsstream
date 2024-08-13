@@ -16,7 +16,7 @@ nltk.download('stopwords', quiet=True)
 ic.configureOutput(prefix='DEBUG | ')
 
 # Database version
-DB_VERSION = 1
+DB_VERSION = 2
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
@@ -61,8 +61,12 @@ def check_and_update_db_structure(conn, db_path):
         
         # Perform necessary updates based on version differences
         if current_version == 1:
-            # Example: Add a new column
-            conn.execute("ALTER TABLE news_items ADD COLUMN new_column TEXT")
+            # Add the 'topics' column if it doesn't exist
+            cursor.execute("PRAGMA table_info(news_items)")
+            columns = [column[1] for column in cursor.fetchall()]
+            if 'topics' not in columns:
+                conn.execute("ALTER TABLE news_items ADD COLUMN topics TEXT")
+                ic("Added 'topics' column to news_items table")
         
         # Update the version in the database
         conn.execute("UPDATE db_version SET version = ?", (DB_VERSION,))
