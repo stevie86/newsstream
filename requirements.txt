@@ -5,3 +5,4 @@ nltk
 requests
 lxml[html_clean]
 icecream
+unittest
