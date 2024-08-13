@@ -1,21 +1,37 @@
 import dspy
+from dspy.backends.ollama import OllamaBackend
 
-# Initialize DSPy (you might need to add your API key or other configurations)
-dspy.configure(api_key="your-api-key-here")
+# Initialize DSPy with Ollama backend using the Mistral model
+ollama = OllamaBackend(model="mistral:latest")
+dspy.configure(lm=ollama)
+
+class TopicExtractor(dspy.Signature):
+    """Extract the main topic from a given text."""
+
+    text = dspy.InputField()
+    topic = dspy.OutputField(desc="The main topic of the text")
+
+class LanguageDetector(dspy.Signature):
+    """Detect the language of a given text."""
+
+    text = dspy.InputField()
+    language = dspy.OutputField(desc="The detected language code (e.g., 'en' for English)")
+
+topic_extractor = dspy.Predict(TopicExtractor)
+language_detector = dspy.Predict(LanguageDetector)
 
 def dspy_extract_topic(text):
     """
     Extract topic from text using DSPy.
     """
-    # This is a placeholder function. You'll need to implement the actual DSPy logic here.
-    # For example, you might use a DSPy module or create a custom pipeline.
-    return "dspy_topic"
+    result = topic_extractor(text=text)
+    return result.topic
 
 def dspy_detect_language(text):
     """
     Detect language of text using DSPy.
     """
-    # This is a placeholder function. You'll need to implement the actual DSPy logic here.
-    return "en"  # Default to English for now
+    result = language_detector(text=text)
+    return result.language
 
 # Add more DSPy-related functions as needed
