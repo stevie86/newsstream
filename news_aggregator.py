@@ -3,6 +3,7 @@ import sqlite3
 import feedparser
 from datetime import datetime
 import time
+from datetime import datetime
 from langdetect import detect
 from newspaper import Article
 import nltk
@@ -62,16 +63,24 @@ def insert_news_item(conn, item, source):
         
         ic(item.title, source, language, topic)
         
+        # Check if 'published' attribute exists, use a default if not
+        pub_date = getattr(item, 'published', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        
         conn.execute('''INSERT INTO news_items (title, link, description, pub_date, source, language, topic)
                         VALUES (?, ?, ?, ?, ?, ?, ?)''',
                      (item.title, item.link, description,
-                      item.published, source, language, topic))
+                      pub_date, source, language, topic))
         conn.commit()
+        ic(f"Successfully inserted: {item.title}")
     except sqlite3.IntegrityError:
         ic(f"Skipping duplicate entry: {item.title}")
     except AttributeError as e:
         ic(f"Error processing item: {e}")
         ic(f"Item attributes: {vars(item)}")
+        # Log all available attributes
+        for attr in dir(item):
+            if not attr.startswith('__'):
+                ic(f"{attr}: {getattr(item, attr, 'N/A')}")
 
 def fetch_and_store_news(conn, sources):
     for source in sources:
