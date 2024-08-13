@@ -83,6 +83,33 @@ Major releases will be merged into the main branch periodically.
 - Add support for exporting news items in various formats
 - Implement user preferences for filtering news items based on topics or sources
 
+## Contributing
+
+When contributing to this project, please use the following format for proposing changes:
+
+### SEARCH/REPLACE Block Rules
+
+Every SEARCH/REPLACE block must use this format:
+1. The file path alone on a line, verbatim.
+2. The opening fence and code language, e.g., <source>python
+3. The start of search block: <<<<<<< SEARCH
+4. A contiguous chunk of lines to search for in the existing source code
+5. The dividing line: =======
+6. The lines to replace into the source code
+7. The end of the replace block: >>>>>>> REPLACE
+8. The closing fence: </source>
+
+Guidelines:
+- Every SEARCH section must EXACTLY MATCH the existing source code, character for character.
+- SEARCH/REPLACE blocks will replace all matching occurrences.
+- Keep SEARCH/REPLACE blocks concise.
+- Break large changes into a series of smaller blocks.
+- Only create SEARCH/REPLACE blocks for files that have been added to the discussion.
+- To move code within a file, use 2 SEARCH/REPLACE blocks: one to delete from the current location, one to insert in the new location.
+- For new files, use a SEARCH/REPLACE block with an empty SEARCH section.
+
+Always return code changes in a SEARCH/REPLACE block format.
+
 ## License
 
 [MIT License](LICENSE)
