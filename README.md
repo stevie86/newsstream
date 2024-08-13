@@ -65,6 +65,16 @@ This is a compact news aggregator that fetches news from various RSS sources, de
 
 The script will continuously fetch news from the specified sources, detect the language and topic of each item, and store them in the SQLite database.
 
+## Testing
+
+To run the unit tests for the news aggregator:
+
+```
+python -m unittest test_news_aggregator.py
+```
+
+This will run all the tests defined in the `test_news_aggregator.py` file, which include tests for config loading, language detection, topic extraction, and news item insertion/updating.
+
 ## Development
 
 This project uses a dev branch for ongoing development. To contribute:
