@@ -16,7 +16,7 @@ This is a compact news aggregator that fetches news from various RSS sources, de
 ## Requirements
 
 - Python 3.6+
-- Libraries: feedparser, langdetect, newspaper3k, nltk, requests
+- Libraries: feedparser, langdetect, newspaper3k, nltk, requests, lxml[html_clean]
 
 ## Installation
 
@@ -30,6 +30,7 @@ This is a compact news aggregator that fetches news from various RSS sources, de
    ```
    pip install -r requirements.txt
    ```
+   Note: This will install all necessary dependencies, including lxml with HTML cleaning support.
 
 ## Configuration
 
