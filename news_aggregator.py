@@ -8,6 +8,7 @@ from newspaper import Article
 import nltk
 
 nltk.download('punkt')
+nltk.download('stopwords')
 
 def load_config(file_path):
     with open(file_path, 'r') as f:
@@ -30,12 +31,23 @@ def detect_language(text):
     except:
         return 'unknown'
 
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from collections import Counter
+
 def extract_topic(text):
-    article = Article('')
-    article.set_text(text)
-    article.parse()
-    article.nlp()
-    return article.keywords[0] if article.keywords else 'unknown'
+    # Tokenize the text
+    tokens = word_tokenize(text.lower())
+    
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
+    
+    # Count word frequencies
+    word_freq = Counter(tokens)
+    
+    # Return the most common word as the topic
+    return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
 
 def insert_news_item(conn, item, source):
     try:
