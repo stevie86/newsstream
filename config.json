@@ -1,5 +1,18 @@
 {
     "database_path": "news.db",
     "update_interval": 3600,
-    "sources": []
+    "sources": [
+        {
+            "name": "BBC News",
+            "url": "http://feeds.bbci.co.uk/news/rss.xml"
+        },
+        {
+            "name": "CNN",
+            "url": "http://rss.cnn.com/rss/edition.rss"
+        },
+        {
+            "name": "New York Times",
+            "url": "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+        }
+    ]
 }

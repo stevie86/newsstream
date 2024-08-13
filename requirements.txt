@@ -1,6 +1,1 @@
 feedparser==6.0.10
-feedparser
-langdetect
-newspaper3k
-nltk
-requests
