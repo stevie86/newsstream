@@ -39,17 +39,22 @@ def extract_topic(text):
 
 def insert_news_item(conn, item, source):
     try:
-        language = detect_language(item.title + ' ' + item.description)
-        topic = extract_topic(item.title + ' ' + item.description)
+        description = getattr(item, 'description', '')
+        language = detect_language(item.title + ' ' + description)
+        topic = extract_topic(item.title + ' ' + description)
         
         conn.execute('''INSERT INTO news_items (title, link, description, pub_date, source, language, topic)
                         VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                     (item.title, item.link, item.description,
+                     (item.title, item.link, description,
                       item.published, source, language, topic))
         conn.commit()
     except sqlite3.IntegrityError:
         # Skip duplicate entries
         pass
+    except AttributeError as e:
+        print(f"Error processing item: {e}")
+        # Optionally, you can print the item to see what attributes are available
+        # print(f"Item attributes: {vars(item)}")
 
 def fetch_and_store_news(conn, sources):
     for source in sources:
