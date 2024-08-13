@@ -87,10 +87,11 @@ To use these models, simply replace "llama2" in the Ollama pull command and DSPy
    ```
    This will guide you through setting up your RSS feeds and create the `config.json` file.
 
-2. (Optional) Manually edit the `config.json` file to adjust:
+2. (Optional) Manually edit the `config.json` file (create it if it doesn't exist) based on the `example-config.json` file to adjust:
    - Database path
    - Update interval (in seconds)
    - RSS sources (name and URL)
+   - DSPy model (if using DSPy)
 
 ## Usage
 
