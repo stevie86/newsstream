@@ -9,7 +9,7 @@ import os
 import shutil
 import logging
 from logging.handlers import RotatingFileHandler
-from dspy_utils import dspy_extract_topic, dspy_detect_language
+from dspy_utils import dspy_extract_topic, dspy_detect_language, initialize_dspy
 
 nltk.download('punkt', quiet=True)
 nltk.download('stopwords', quiet=True)
@@ -193,10 +193,14 @@ def main():
     db_path = config['database_path']
     sources = config['sources']
     update_interval = config['update_interval']
+    dspy_model = config.get('dspy_model', 'mistral:latest')
 
     logger.info(f"Database path: {db_path}")
     logger.info(f"Number of sources: {len(sources)}")
     logger.info(f"Update interval: {update_interval} seconds")
+    logger.info(f"DSPy model: {dspy_model}")
+
+    initialize_dspy(dspy_model)
 
     conn = sqlite3.connect(db_path)
     create_table(conn)
