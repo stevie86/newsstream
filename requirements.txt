@@ -5,4 +5,4 @@ nltk
 requests
 lxml[html_clean]
 icecream
-dspy-ai
+dspy-ai>=2.0.0
