@@ -1,46 +1,53 @@
 import json
-import re
 import requests
+from typing import List, Dict
 
-def get_feed_info():
-    url = input("Enter the URL of the RSS feed: ")
-    custom_name = input("Do you want to assign a custom name? (y/n): ").lower().strip()
-    if custom_name == 'y':
-        name = input("Enter the custom name for this feed: ")
-    else:
-        name = url.split('//')[1].split('/')[0]  # Use domain as default name
+def get_feed_info() -> Dict[str, str]:
+    """Get RSS feed information from user input."""
+    url = input("Enter the URL of the RSS feed: ").strip()
+    custom_name = input("Enter a custom name for this feed (press Enter to use default): ").strip()
+    name = custom_name if custom_name else url.split('//')[1].split('/')[0]
     return {"name": name, "url": url}
 
-def validate_url(url):
+def validate_url(url: str) -> bool:
+    """Validate if the given URL is accessible."""
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         return response.status_code == 200
-    except:
+    except requests.RequestException:
         return False
 
-def setup_config():
-    config = {
-        "database_path": "news.db",
-        "update_interval": 3600,
-        "sources": []
-    }
-
+def get_multiple_feeds() -> List[Dict[str, str]]:
+    """Get multiple RSS feeds from user input."""
+    feeds = []
+    print("Let's add RSS feeds to your configuration.")
+    print("You can add multiple feeds. Enter 'done' when finished.")
+    
     while True:
         feed = get_feed_info()
         if validate_url(feed["url"]):
-            config["sources"].append(feed)
+            feeds.append(feed)
             print(f"Added {feed['name']} successfully!")
         else:
-            print("Invalid URL. Please try again.")
+            print("Invalid or inaccessible URL. Please try again.")
         
-        add_another = input("Do you want to add another RSS feed? (y/n): ").lower().strip()
-        if add_another != 'y':
+        if input("Enter 'done' to finish, or press Enter to add another feed: ").lower().strip() == 'done':
             break
+    
+    return feeds
+
+def setup_config():
+    """Set up the configuration file with user input."""
+    config = {
+        "database_path": "news.db",
+        "update_interval": 3600,
+        "sources": get_multiple_feeds()
+    }
 
     with open('config.json', 'w') as f:
         json.dump(config, f, indent=4)
 
-    print("Configuration saved to config.json")
+    print(f"Configuration saved to config.json with {len(config['sources'])} RSS feeds.")
 
 if __name__ == "__main__":
     try:
