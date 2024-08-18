@@ -38,7 +38,7 @@ Note: The current implementation uses placeholder functions for DSPy-based langu
    ```
    python download_nltk_data.py
    ```
-   This step is crucial for the language detection and topic extraction features to work correctly. The script will download the necessary NLTK data for both Windows and Linux systems.
+   This step is crucial for the language detection, topic extraction, and other NLP features to work correctly. The script will download the necessary NLTK data (punkt, stopwords, and wordnet) for both Windows and Linux systems.
 
 4. Set up DSPy:
    - You'll need to configure DSPy with an API key or other necessary configurations. Refer to the DSPy documentation for specific setup instructions.
