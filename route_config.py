@@ -1,11 +1,10 @@
-from route_llm import Router, OpenAILLM, AnthropicLLM
+from route_llm import Router, OpenAILLM
 
 router = Router()
 
 # Define your models
 gpt_3_5_turbo = OpenAILLM("gpt-3.5-turbo")
 gpt_4 = OpenAILLM("gpt-4")
-claude = AnthropicLLM("claude-2")
 
 # Define routing rules
 router.add_rule(lambda x: len(x) > 1000, gpt_4)
