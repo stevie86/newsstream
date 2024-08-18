@@ -1,6 +1,5 @@
 {
     "database_path": "news.db",
     "update_interval": 3600,
-    "sources": [],
-    "dspy_model": "mistral:latest"
+    "sources": []
 }
