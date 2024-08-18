@@ -36,7 +36,7 @@ def main():
 
     # Validate script
     if validate_script(script):
-        print("Script is valid.")
+        print("Hey, Script is valid.")
         print(script)
     else:
         print("Script validation failed.")
