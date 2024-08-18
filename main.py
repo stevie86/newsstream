@@ -8,6 +8,7 @@ from src.aggregator import fetch_rss_feed, scrape_website
 from src.summarizer import summarize_article
 from src.script_generator import ScriptGenerator
 from src.validator import validate_script
+from route_config import router
 
 # Load environment variables from .env file
 load_dotenv()
@@ -29,7 +30,7 @@ def get_article_summaries(rss_feed_url: str) -> List[str]:
     """Fetch RSS feed and summarize articles."""
     try:
         rss_articles = fetch_rss_feed(rss_feed_url)
-        return [summarize_article(article['description']) for _, article in rss_articles.iterrows()]
+        return [summarize_article(article['description'], router) for _, article in rss_articles.iterrows()]
     except Exception as e:
         print(f"Error fetching or summarizing articles: {e}")
         return []
@@ -57,7 +58,7 @@ def main():
         concatenated_summaries = "\n\n".join(summaries)
 
         # Generate YouTube scripts
-        script_generator = ScriptGenerator()
+        script_generator = ScriptGenerator(router=router)
         try:
             script = script_generator(summaries=concatenated_summaries)
         except Exception as e:
@@ -65,7 +66,7 @@ def main():
             return
 
         # Validate script
-        if validate_script(script):
+        if validate_script(script, router):
             print("Script is valid.")
             print(script)
         else:
