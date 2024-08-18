@@ -93,6 +93,26 @@ To use these models, simply replace "llama2" in the Ollama pull command and DSPy
    - RSS sources (name and URL)
    - DSPy model (if using DSPy)
 
+3. Configure the `route_config.py` file:
+   The `route_config.py` file contains the configuration for the AI model routing. It defines which models or APIs are used for different tasks in the application. You may need to adjust this file based on your specific AI setup and requirements.
+
+   Example structure of `route_config.py`:
+   ```python
+   from dspy.retrieve.bing_search import BingSearchRetriever
+   from dspy.retrieve.pinecone import PineconeRetriever
+   import dspy
+
+   router = dspy.RetrieveAndRoute(
+       retriever=BingSearchRetriever(),
+       routes={
+           'summarize': dspy.ChainOfThought('gpt-3.5-turbo'),
+           'generate_script': dspy.ChainOfThought('gpt-4'),
+           'validate_script': PineconeRetriever()
+       }
+   )
+   ```
+   Adjust the models, APIs, and routes according to your needs and available resources.
+
 ## Usage
 
 1. Run the setup script (if you haven't already):
