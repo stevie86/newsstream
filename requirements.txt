@@ -5,7 +5,7 @@ icecream
 langdetect
 lxml[html_clean]==5.2.2
 newspaper3k
-nltk
+nltk==3.5
 numpy==2.0.1
 openai==1.37.2
 pandas==2.2.2
