@@ -1,6 +1,7 @@
 import json
 import requests
 from typing import List, Dict
+import os
 
 def get_feed_info() -> Dict[str, str]:
     """Get RSS feed information from user input."""
@@ -17,10 +18,20 @@ def validate_url(url: str) -> bool:
     except requests.RequestException:
         return False
 
-def get_multiple_feeds() -> List[Dict[str, str]]:
-    """Get multiple RSS feeds from user input."""
+def get_multiple_feeds(existing_feeds: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """Get multiple RSS feeds from user input and retain existing feeds if desired."""
     feeds = []
-    print("Let's add RSS feeds to your configuration.")
+    
+    # Ask about existing feeds
+    for feed in existing_feeds:
+        keep = input(f"Do you want to keep the existing feed '{feed['name']}' ({feed['url']})? (y/n): ").lower().strip()
+        if keep == 'y':
+            feeds.append(feed)
+            print(f"Kept existing feed: {feed['name']}")
+        else:
+            print(f"Removed feed: {feed['name']}")
+    
+    print("\nLet's add new RSS feeds to your configuration.")
     print("You can add multiple feeds. Enter 'done' when finished.")
     
     while True:
@@ -38,10 +49,17 @@ def get_multiple_feeds() -> List[Dict[str, str]]:
 
 def setup_config():
     """Set up the configuration file with user input."""
+    existing_config = {}
+    if os.path.exists('config.json'):
+        with open('config.json', 'r') as f:
+            existing_config = json.load(f)
+    
+    existing_feeds = existing_config.get('sources', [])
+    
     config = {
-        "database_path": "news.db",
-        "update_interval": 3600,
-        "sources": get_multiple_feeds()
+        "database_path": existing_config.get('database_path', "news.db"),
+        "update_interval": existing_config.get('update_interval', 3600),
+        "sources": get_multiple_feeds(existing_feeds)
     }
 
     with open('config.json', 'w') as f:
