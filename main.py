@@ -1,14 +1,26 @@
 from dotenv import load_dotenv
 import os
-from typing import List
 import openai
 from contextlib import contextmanager
+import json
+import time
+import logging
+from logging.handlers import RotatingFileHandler
 
-from src.aggregator import fetch_rss_feed, scrape_website
+from src.aggregator import fetch_rss_feed, process_news_item
+from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
 from src.summarizer import summarize_article
 from src.script_generator import ScriptGenerator
 from src.validator import validate_script
 from route_config import router
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+logger = logging.getLogger(__name__)
+file_handler = RotatingFileHandler('news_aggregator.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
+file_handler.setLevel(logging.DEBUG)
+file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+logger.addHandler(file_handler)
 
 # Load environment variables from .env file
 load_dotenv()
@@ -26,51 +38,38 @@ def set_openai_api_key():
     finally:
         openai.api_key = original_api_key
 
-def get_article_summaries(rss_feed_url: str) -> List[str]:
-    """Fetch RSS feed and summarize articles."""
-    try:
-        rss_articles = fetch_rss_feed(rss_feed_url)
-        return [summarize_article(article['description'], router) for _, article in rss_articles.iterrows()]
-    except Exception as e:
-        print(f"Error fetching or summarizing articles: {e}")
-        return []
+def load_config(file_path):
+    with open(file_path, 'r') as f:
+        return json.load(f)
+
+def fetch_and_store_news(conn, sources):
+    for source in sources:
+        logger.info(f"Fetching news from: {source['name']}")
+        feed = fetch_rss_feed(source['url'])
+        logger.info(f"Found {len(feed)} entries")
+        for _, item in feed.iterrows():
+            processed_item = process_news_item(item, source['name'])
+            insert_or_update_news_item(conn, processed_item)
 
 def main():
-    """
-    Main function to orchestrate the news processing and script generation.
+    config = load_config('config.json')
+    db_path = config['database_path']
+    sources = config['sources']
+    update_interval = config['update_interval']
     
-    This function performs the following steps:
-    1. Fetches and summarizes articles from an RSS feed
-    2. Generates a YouTube script based on the article summaries
-    3. Validates the generated script
-    """
-    rss_feed_url = "https://feeds.washingtonpost.com/rss/rss_fact-checker?itid=lk_inline_manual_4"
-    
-    with set_openai_api_key():
-        # Fetch and summarize articles
-        summaries = get_article_summaries(rss_feed_url)
-        
-        if not summaries:
-            print("No summaries generated. Exiting.")
-            return
+    logger.info(f"Database path: {db_path}")
+    logger.info(f"Number of sources: {len(sources)}")
+    logger.info(f"Update interval: {update_interval} seconds")
 
-        # Concatenate summaries into a single string
-        concatenated_summaries = "\n\n".join(summaries)
+    conn = create_connection(db_path)
+    create_table(conn)
+    check_and_update_db_structure(conn, db_path)
 
-        # Generate YouTube scripts
-        script_generator = ScriptGenerator(router=router)
-        try:
-            script = script_generator(summaries=concatenated_summaries)
-        except Exception as e:
-            print(f"Error generating script: {e}")
-            return
-
-        # Validate script
-        if validate_script(script, router):
-            print("Script is valid.")
-            print(script)
-        else:
-            print("Script validation failed.")
+    while True:
+        logger.info(f"Fetching news at {time.strftime('%Y-%m-%d %H:%M:%S')}")
+        fetch_and_store_news(conn, sources)
+        logger.info(f"Sleeping for {update_interval} seconds")
+        time.sleep(update_interval)
 
 if __name__ == "__main__":
     main()
