@@ -1,9 +1,6 @@
-import dspy
+from route_config import router
 
-turbo = dspy.OpenAI(model='gpt-3.5-turbo')
-dspy.settings.configure(lm=turbo)
-
-def summarize_article(article):
+def summarize_article(article, router):
     prompt = f"Summarize the following article: {article}"
-    summary = turbo.complete(prompt).text
+    summary = router.route(prompt).text
     return summary.strip()

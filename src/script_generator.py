@@ -1,13 +1,10 @@
-import dspy
+from route_config import router
 
-class GenerateScript(dspy.Signature):
-    summaries = dspy.InputField()
-    script = dspy.OutputField(desc="The generated YouTube script")
+class ScriptGenerator:
+    def __init__(self, router):
+        self.router = router
 
-class ScriptGenerator(dspy.Module):
-    def __init__(self):
-        self.generate_script = dspy.ChainOfThought(GenerateScript)
-       
-    def forward(self, summaries):
-        script = self.generate_script(summaries=summaries).script
+    def __call__(self, summaries):
+        prompt = f"Generate a YouTube script based on the following summaries:\n\n{summaries}"
+        script = self.router.route(prompt).text
         return script
