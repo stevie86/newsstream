@@ -112,10 +112,13 @@ def main(is_daemon=False):
         
         # Generate and save YouTube Short script
         script = generate_youtube_short_script(conn)
-        script_filename = f"youtube_short_script_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-        with open(script_filename, 'w') as f:
-            f.write(script)
-        logger.info(f"YouTube Short script saved to {script_filename}")
+        if script:
+            script_filename = f"youtube_short_script_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+            with open(script_filename, 'w') as f:
+                f.write(script)
+            logger.info(f"YouTube Short script saved to {script_filename}")
+        else:
+            logger.warning("No script was generated.")
         
         logger.info(f"Sleeping for {update_interval} seconds")
         time.sleep(update_interval)
