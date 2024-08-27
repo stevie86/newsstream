@@ -197,7 +197,7 @@ def fetch_and_store_news(conn, sources):
             insert_or_update_news_item(conn, entry, source['name'])
 
 def main(is_daemon=False):
-    global logger
+    global logger, running
     logger = setup_logging(is_daemon)
 
     config = load_config('config.json')
@@ -216,14 +216,21 @@ def main(is_daemon=False):
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    while running:
-        logger.info(f"Fetching news at {datetime.now()}")
-        fetch_and_store_news(conn, sources)
-        logger.info(f"Sleeping for {update_interval} seconds")
-        time.sleep(update_interval)
-
-    logger.info("Shutting down gracefully...")
-    conn.close()
+    try:
+        while running:
+            logger.info(f"Fetching news at {datetime.now()}")
+            fetch_and_store_news(conn, sources)
+            
+            # Use a loop with shorter sleep intervals to check running status more frequently
+            for _ in range(update_interval):
+                if not running:
+                    break
+                time.sleep(1)
+    except KeyboardInterrupt:
+        logger.info("Received KeyboardInterrupt. Shutting down...")
+    finally:
+        logger.info("Shutting down gracefully...")
+        conn.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="News Aggregator")
