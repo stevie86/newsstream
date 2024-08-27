@@ -1,6 +1,6 @@
 import json
 import requests
-from typing import List, Dict
+from typing import List, Dict, Optional
 import os
 
 def get_feed_info() -> Dict[str, str]:
@@ -47,12 +47,28 @@ def get_multiple_feeds(existing_feeds: List[Dict[str, str]]) -> List[Dict[str, s
     
     return feeds
 
-def setup_config():
-    """Set up the configuration file with user input."""
-    existing_config = {}
+def load_existing_config() -> Dict[str, Any]:
+    """Load existing configuration if available."""
     if os.path.exists('config.json'):
-        with open('config.json', 'r') as f:
-            existing_config = json.load(f)
+        try:
+            with open('config.json', 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print("Error reading existing config. Starting with default values.")
+    return {}
+
+def save_config(config: Dict[str, Any]) -> None:
+    """Save configuration to file."""
+    try:
+        with open('config.json', 'w') as f:
+            json.dump(config, f, indent=4)
+        print(f"Configuration saved to config.json with {len(config['sources'])} RSS feeds.")
+    except IOError as e:
+        print(f"Error saving configuration: {e}")
+
+def setup_config() -> None:
+    """Set up the configuration file with user input."""
+    existing_config = load_existing_config()
     
     existing_feeds = existing_config.get('sources', [])
     
@@ -62,12 +78,9 @@ def setup_config():
         "sources": get_multiple_feeds(existing_feeds)
     }
 
-    with open('config.json', 'w') as f:
-        json.dump(config, f, indent=4)
+    save_config(config)
 
-    print(f"Configuration saved to config.json with {len(config['sources'])} RSS feeds.")
-
-if __name__ == "__main__":
+def main() -> None:
     try:
         setup_config()
     except KeyboardInterrupt:
@@ -76,3 +89,6 @@ if __name__ == "__main__":
         print(f"\nAn error occurred: {e}")
     else:
         print("Setup completed successfully.")
+
+if __name__ == "__main__":
+    main()
