@@ -156,20 +156,38 @@ def detect_language(text):
 
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
-from collections import Counter
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import normalize
+import numpy as np
 
-def extract_topic(text):
+def extract_topics(text, num_topics=3):
+    # Tokenize and preprocess the text
     tokens = word_tokenize(text.lower())
     stop_words = set(stopwords.words('english'))
     tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
-    word_freq = Counter(tokens)
-    return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
+    processed_text = ' '.join(tokens)
+
+    # Create and fit TF-IDF vectorizer
+    vectorizer = TfidfVectorizer(max_features=1000)
+    tfidf_matrix = vectorizer.fit_transform([processed_text])
+
+    # Get feature names (words)
+    feature_names = vectorizer.get_feature_names_out()
+
+    # Normalize the TF-IDF matrix
+    normalized_tfidf = normalize(tfidf_matrix)
+
+    # Get the top N topics
+    top_n_indices = normalized_tfidf.toarray()[0].argsort()[-num_topics:][::-1]
+    top_topics = [feature_names[i] for i in top_n_indices]
+
+    return ','.join(top_topics) if top_topics else 'unknown'
 
 def insert_or_update_news_item(conn, item, source):
     try:
         description = getattr(item, 'description', '')
         language = detect_language(item.title + ' ' + description)
-        topics = [extract_topic(item.title + ' ' + description)]
+        topics = extract_topics(item.title + ' ' + description)
         
         logger.debug(f"Processing item: {item.title}, Source: {source}, Language: {language}, Topics: {topics}")
         
@@ -186,14 +204,14 @@ def insert_or_update_news_item(conn, item, source):
                                 source = ?, language = ?, topics = ?, last_updated = ?
                             WHERE link = ?''',
                          (item.title, description, pub_date, source, 
-                          language, ','.join(topics), current_time, item.link))
+                          language, topics, current_time, item.link))
             logger.info(f"Updated existing item: {item.title}")
         else:
             conn.execute('''INSERT INTO news_items 
                             (title, link, description, pub_date, source, language, topics, last_updated)
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
                          (item.title, item.link, description, pub_date, 
-                          source, language, ','.join(topics), current_time))
+                          source, language, topics, current_time))
             logger.info(f"Inserted new item: {item.title}")
         
         conn.commit()
@@ -215,6 +233,9 @@ def main(is_daemon=False):
     global logger, running
     logger = setup_logging(is_daemon)
 
+    logger.info("Starting News Aggregator")
+    logger.info(f"Daemon mode: {is_daemon}")
+
     config = load_config('config.json')
     db_path = config['database_path']
     sources = config['sources']
@@ -222,6 +243,9 @@ def main(is_daemon=False):
     logger.info(f"Database path: {db_path}")
     logger.info(f"Number of sources: {len(sources)}")
     logger.info(f"Update interval: {update_interval} seconds")
+
+    for idx, source in enumerate(sources, 1):
+        logger.info(f"Source {idx}: {source['name']} - {source['url']}")
 
     conn = sqlite3.connect(db_path)
     create_table(conn)
