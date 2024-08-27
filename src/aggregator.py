@@ -66,14 +66,18 @@ def fetch_rss_feed(url):
         logger.error(f"Error fetching RSS feed from {url}: {e}")
         return []
 
-def fetch_and_store_news(conn, sources, insert_or_update_news_item):
+def fetch_and_store_news(conn, sources, logger):
+    from src.database import insert_or_update_news_item
     for source in sources:
         logger.info(f"Fetching news from: {source['name']}")
-        entries = fetch_rss_feed(source['url'])
-        logger.info(f"Found {len(entries)} entries")
-        for entry in entries:
-            try:
-                processed_item = process_news_item(entry, source['name'])
-                insert_or_update_news_item(conn, processed_item)
-            except Exception as e:
-                logger.error(f"Error processing entry from {source['name']}: {e}")
+        try:
+            entries = fetch_rss_feed(source['url'])
+            logger.info(f"Found {len(entries)} entries")
+            for entry in entries:
+                try:
+                    processed_item = process_news_item(entry, source['name'])
+                    insert_or_update_news_item(conn, processed_item)
+                except Exception as e:
+                    logger.error(f"Error processing entry from {source['name']}: {e}")
+        except Exception as e:
+            logger.error(f"Error fetching RSS feed from {source['name']}: {e}")

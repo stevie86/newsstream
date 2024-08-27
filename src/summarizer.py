@@ -55,14 +55,25 @@ def summarize_article(title, description, source):
 
 def generate_youtube_short_script(conn):
     """Generate a script for a YouTube Short based on top news articles."""
-    articles = get_top_articles(conn)
-    script = "Hey there, news junkies! 👋 Let's dive into today's top stories:\n\n"
-    
-    for i, article in enumerate(articles, 1):
-        title, description, source = article
-        summary = summarize_article(title, description, source)
-        script += f"{i}. 🔥 {summary}\n\n"
-    
-    script += "That's all for now! 🎬 Remember to like, subscribe, and hit that notification bell for your daily dose of news shorts! 🔔\n"
-    script += "See you tomorrow for more breaking stories! 👋"
-    return script
+    try:
+        articles = get_top_articles(conn)
+        if not articles:
+            logger.warning("No articles found for YouTube Short script")
+            return None
+
+        script = "Hey there, news junkies! 👋 Let's dive into today's top stories:\n\n"
+        
+        for i, article in enumerate(articles, 1):
+            title, description, source = article
+            try:
+                summary = summarize_article(title, description, source)
+                script += f"{i}. 🔥 {summary}\n\n"
+            except Exception as e:
+                logger.error(f"Error summarizing article {i}: {e}")
+        
+        script += "That's all for now! 🎬 Remember to like, subscribe, and hit that notification bell for your daily dose of news shorts! 🔔\n"
+        script += "See you tomorrow for more breaking stories! 👋"
+        return script
+    except Exception as e:
+        logger.error(f"Error generating YouTube Short script: {e}")
+        return None

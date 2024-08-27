@@ -3,31 +3,20 @@ import sqlite3
 from datetime import datetime
 import time
 import logging
-from logging.handlers import RotatingFileHandler
 import argparse
 import signal
 import sys
-try:
-    import daemon
-except ImportError:
-    print("Warning: daemon module not available. Running in foreground mode only.")
-    daemon = None
 from dotenv import load_dotenv
 import os
 import platform
-from contextlib import contextmanager
 
-from src.aggregator import fetch_and_store_news, fetch_rss_feed, process_news_item
-from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
+from src.aggregator import fetch_and_store_news
+from src.database import create_connection, create_table, check_and_update_db_structure
 from src.summarizer import generate_youtube_short_script
-from src.summarizer import summarize_article
-from src.script_generator import ScriptGenerator
-from src.validator import validate_script
+from src.logger import setup_logging
 
 # Global variable to control the main loop
 running = True
-
-from src.logger import setup_logging
 
 # Ensure the logger is set up at the module level
 logger = setup_logging()
@@ -57,18 +46,6 @@ OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY not found in environment variables")
     sys.exit(1)
-
-def fetch_and_store_news(conn, sources):
-    for source in sources:
-        logger.info(f"Fetching news from: {source['name']}")
-        entries = fetch_rss_feed(source['url'])
-        logger.info(f"Found {len(entries)} entries")
-        for entry in entries:
-            try:
-                processed_item = process_news_item(entry, source['name'])
-                insert_or_update_news_item(conn, processed_item)
-            except Exception as e:
-                logger.error(f"Error processing entry from {source['name']}: {e}")
 
 def main(is_daemon=False):
     global logger
@@ -106,25 +83,28 @@ def main(is_daemon=False):
     signal.signal(signal.SIGTERM, signal_handler)
     signal.signal(signal.SIGINT, signal_handler)
 
-    while running:
-        logger.info(f"Fetching news at {datetime.now()}")
-        fetch_and_store_news(conn, sources)
-        
-        # Generate and save YouTube Short script
-        script = generate_youtube_short_script(conn)
-        if script:
-            script_filename = f"youtube_short_script_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
-            with open(script_filename, 'w') as f:
-                f.write(script)
-            logger.info(f"YouTube Short script saved to {script_filename}")
-        else:
-            logger.warning("No script was generated.")
-        
-        logger.info(f"Sleeping for {update_interval} seconds")
-        time.sleep(update_interval)
-
-    logger.info("Shutting down gracefully...")
-    conn.close()
+    try:
+        while running:
+            logger.info(f"Fetching news at {datetime.now()}")
+            fetch_and_store_news(conn, sources, logger)
+            
+            # Generate and save YouTube Short script
+            script = generate_youtube_short_script(conn)
+            if script:
+                script_filename = f"youtube_short_script_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+                with open(script_filename, 'w') as f:
+                    f.write(script)
+                logger.info(f"YouTube Short script saved to {script_filename}")
+            else:
+                logger.warning("No script was generated.")
+            
+            logger.info(f"Sleeping for {update_interval} seconds")
+            time.sleep(update_interval)
+    except Exception as e:
+        logger.error(f"An error occurred in the main loop: {e}")
+    finally:
+        logger.info("Shutting down gracefully...")
+        conn.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="News Aggregator")

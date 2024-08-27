@@ -82,26 +82,33 @@ def check_and_update_db_structure(conn, db_path):
 
 def insert_or_update_news_item(conn, item):
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM news_items WHERE link = ?", (item['link'],))
-    existing_item = cursor.fetchone()
-    
-    if existing_item:
-        conn.execute('''UPDATE news_items 
-                        SET title = ?, description = ?, pub_date = ?, 
-                            source = ?, language = ?, topics = ?, last_updated = ?
-                        WHERE link = ?''',
-                     (item['title'], item['description'], item['pub_date'], item['source'], 
-                      item['language'], item['topics'], item['last_updated'], item['link']))
-        logger.info(f"Updated existing item: {item['title']}")
-    else:
-        conn.execute('''INSERT INTO news_items 
-                        (title, link, description, pub_date, source, language, topics, last_updated)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                     (item['title'], item['link'], item['description'], item['pub_date'], 
-                      item['source'], item['language'], item['topics'], item['last_updated']))
-        logger.info(f"Inserted new item: {item['title']}")
-    
-    conn.commit()
+    try:
+        cursor.execute("SELECT * FROM news_items WHERE link = ?", (item['link'],))
+        existing_item = cursor.fetchone()
+        
+        if existing_item:
+            conn.execute('''UPDATE news_items 
+                            SET title = ?, description = ?, pub_date = ?, 
+                                source = ?, language = ?, topics = ?, last_updated = ?
+                            WHERE link = ?''',
+                         (item['title'], item['description'], item['pub_date'], item['source'], 
+                          item['language'], item['topics'], item['last_updated'], item['link']))
+            logger.info(f"Updated existing item: {item['title']}")
+        else:
+            conn.execute('''INSERT INTO news_items 
+                            (title, link, description, pub_date, source, language, topics, last_updated)
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
+                         (item['title'], item['link'], item['description'], item['pub_date'], 
+                          item['source'], item['language'], item['topics'], item['last_updated']))
+            logger.info(f"Inserted new item: {item['title']}")
+        
+        conn.commit()
+    except sqlite3.Error as e:
+        logger.error(f"Database error: {e}")
+        conn.rollback()
+    except Exception as e:
+        logger.error(f"Error inserting/updating news item: {e}")
+        conn.rollback()
 
 def detect_language_for_existing_entries(conn, detect_language_func):
     cursor = conn.cursor()
