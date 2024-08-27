@@ -254,8 +254,12 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.detect_language:
-        conn = sqlite3.connect(load_config('config.json')['database_path'])
+        config = load_config('config.json')
+        db_path = config['database_path']
+        conn = sqlite3.connect(db_path)
         setup_logging(False)
+        create_table(conn)
+        check_and_update_db_structure(conn, db_path)
         detect_language_for_existing_entries(conn)
         conn.close()
     elif args.background and platform.system() != "Windows":
