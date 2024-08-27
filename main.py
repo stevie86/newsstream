@@ -7,7 +7,11 @@ from logging.handlers import RotatingFileHandler
 import argparse
 import signal
 import sys
-import daemon
+try:
+    import daemon
+except ImportError:
+    print("Warning: daemon module not available. Running in foreground mode only.")
+    daemon = None
 from dotenv import load_dotenv
 import os
 import platform
