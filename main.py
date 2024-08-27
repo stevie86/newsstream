@@ -14,6 +14,7 @@ from contextlib import contextmanager
 
 from src.aggregator import fetch_rss_feed, process_news_item
 from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
+from src.summarizer import generate_youtube_short_script
 from src.summarizer import summarize_article
 from src.script_generator import ScriptGenerator
 from src.validator import validate_script
@@ -105,6 +106,14 @@ def main(is_daemon=False):
     while running:
         logger.info(f"Fetching news at {datetime.now()}")
         fetch_and_store_news(conn, sources)
+        
+        # Generate and save YouTube Short script
+        script = generate_youtube_short_script(conn)
+        script_filename = f"youtube_short_script_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
+        with open(script_filename, 'w') as f:
+            f.write(script)
+        logger.info(f"YouTube Short script saved to {script_filename}")
+        
         logger.info(f"Sleeping for {update_interval} seconds")
         time.sleep(update_interval)
 

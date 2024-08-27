@@ -4,3 +4,55 @@ def summarize_article(article, router):
     prompt = f"Summarize the following article: {article}"
     summary = router.route(prompt).text
     return summary.strip()
+import sqlite3
+from datetime import datetime, timedelta
+import openai
+from dotenv import load_dotenv
+import os
+
+# Load environment variables
+load_dotenv()
+
+# Set up OpenAI API key
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+def get_top_articles(conn, limit=5):
+    """Fetch the top articles from the last 24 hours."""
+    cursor = conn.cursor()
+    yesterday = (datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d %H:%M:%S')
+    cursor.execute("""
+        SELECT title, description, source
+        FROM news_items
+        WHERE pub_date > ?
+        ORDER BY pub_date DESC
+        LIMIT ?
+    """, (yesterday, limit))
+    return cursor.fetchall()
+
+def summarize_article(title, description, source):
+    """Summarize a single article using OpenAI's API."""
+    prompt = f"Summarize this news article in one short, exciting sentence for a YouTube Short script:\n\nTitle: {title}\nSource: {source}\nDescription: {description}"
+    
+    response = openai.Completion.create(
+        engine="text-davinci-002",
+        prompt=prompt,
+        max_tokens=50,
+        n=1,
+        stop=None,
+        temperature=0.7,
+    )
+    
+    return response.choices[0].text.strip()
+
+def generate_youtube_short_script(conn):
+    """Generate a script for a YouTube Short based on top news articles."""
+    articles = get_top_articles(conn)
+    script = "Today's Top News:\n\n"
+    
+    for article in articles:
+        title, description, source = article
+        summary = summarize_article(title, description, source)
+        script += f"• {summary}\n"
+    
+    script += "\nThat's all for today's news update! Like and subscribe for more daily news shorts!"
+    return script
