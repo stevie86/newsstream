@@ -28,18 +28,23 @@ def setup_logging(is_daemon=False):
     logger.setLevel(logging.DEBUG)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    if is_daemon:
-        file_handler = RotatingFileHandler('news_aggregator.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    else:
+    # Always add a file handler, regardless of daemon mode
+    file_handler = RotatingFileHandler('news_aggregator.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    # Add console handler only if not in daemon mode
+    if not is_daemon:
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
         console_handler.setFormatter(formatter)
         logger.addHandler(console_handler)
 
     return logger
+
+# Ensure the logger is set up at the module level
+logger = setup_logging()
 
 # Signal handler for graceful shutdown
 def signal_handler(signum, frame):
@@ -81,9 +86,20 @@ def fetch_and_store_news(conn, sources):
 
 def main(is_daemon=False):
     global logger
-    logger = setup_logging(is_daemon)
+    # Update the existing logger for daemon mode if necessary
+    if is_daemon:
+        for handler in logger.handlers[:]:
+            if isinstance(handler, logging.StreamHandler):
+                logger.removeHandler(handler)
 
-    config = load_config('config.json')
+    logger.info("Starting News Aggregator")
+    logger.info(f"Daemon mode: {is_daemon}")
+
+    try:
+        config = load_config('config.json')
+    except Exception as e:
+        logger.error(f"Failed to load configuration: {e}")
+        return
     db_path = config['database_path']
     sources = config['sources']
     update_interval = config['update_interval']
