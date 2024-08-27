@@ -1,9 +1,18 @@
-from route_config import router
+try:
+    from route_config import router
+except ImportError:
+    print("Warning: route_config module not found. Using fallback summarization.")
+    router = None
 
-def summarize_article(article, router):
-    prompt = f"Summarize the following article: {article}"
-    summary = router.route(prompt).text
-    return summary.strip()
+def summarize_article(article, router=None):
+    if router:
+        prompt = f"Summarize the following article: {article}"
+        summary = router.route(prompt)
+        return summary.strip()
+    else:
+        # Fallback summarization method
+        words = article.split()
+        return ' '.join(words[:30]) + "..."  # Simple truncation as a fallback
 import sqlite3
 from datetime import datetime, timedelta
 import openai
