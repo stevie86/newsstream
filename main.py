@@ -10,6 +10,7 @@ import sys
 import daemon
 from dotenv import load_dotenv
 import os
+import platform
 from contextlib import contextmanager
 
 from src.aggregator import fetch_rss_feed, process_news_item
