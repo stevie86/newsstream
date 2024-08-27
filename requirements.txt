@@ -14,4 +14,4 @@ python-daemon==3.0.1
 python-dotenv==1.0.0
 requests==2.32.3
 SQLAlchemy==2.0.31
-cld3==0.2.3
+cld3==0.2.2
