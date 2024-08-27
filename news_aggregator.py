@@ -23,6 +23,9 @@ DB_VERSION = 2
 # Global variable to control the main loop
 running = True
 
+# Initialize logger at the module level
+logger = logging.getLogger(__name__)
+
 def setup_logging(is_daemon=False):
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.DEBUG)
@@ -147,7 +150,6 @@ def extract_topic(text):
     return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
 
 def insert_or_update_news_item(conn, item, source):
-    global logger
     try:
         description = getattr(item, 'description', '')
         language = detect_language(item.title + ' ' + description)
