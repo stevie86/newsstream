@@ -113,11 +113,16 @@ def main(is_daemon=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="News Aggregator")
-    parser.add_argument("--daemon", action="store_true", help="Run as a daemon process")
+    parser.add_argument("--background", action="store_true", help="Run in background mode")
     args = parser.parse_args()
 
-    if args.daemon:
-        with daemon.DaemonContext():
-            main(is_daemon=True)
+    if args.background and platform.system() != "Windows":
+        try:
+            import daemon
+            with daemon.DaemonContext():
+                main(is_daemon=True)
+        except ImportError:
+            print("Daemon module not available. Running in foreground.")
+            main(is_daemon=False)
     else:
         main(is_daemon=False)
