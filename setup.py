@@ -19,13 +19,13 @@ def validate_url(url: str) -> bool:
         return False
 
 def get_multiple_feeds(existing_feeds: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    """Get multiple RSS feeds from user input and retain existing feeds if desired."""
+    """Get multiple RSS feeds from user input and retain existing feeds by default."""
     feeds = []
     
-    # Ask about existing feeds
+    # Keep existing feeds by default
     for feed in existing_feeds:
-        keep = input(f"Do you want to keep the existing feed '{feed['name']}' ({feed['url']})? (y/n): ").lower().strip()
-        if keep == 'y':
+        keep = input(f"Do you want to keep the existing feed '{feed['name']}' ({feed['url']})? (Y/n): ").lower().strip()
+        if keep != 'n':
             feeds.append(feed)
             print(f"Kept existing feed: {feed['name']}")
         else:
