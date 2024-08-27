@@ -20,6 +20,22 @@ nltk.download('stopwords', quiet=True)
 # Database version
 DB_VERSION = 2
 
+def detect_language_for_existing_entries(conn):
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, description FROM news_items WHERE language IS NULL OR language = 'unknown'")
+    items = cursor.fetchall()
+    
+    for item in items:
+        item_id, title, description = item
+        text = f"{title} {description}"
+        language = detect_language(text)
+        
+        conn.execute("UPDATE news_items SET language = ? WHERE id = ?", (language, item_id))
+        logger.info(f"Updated language for item {item_id}: {language}")
+    
+    conn.commit()
+    logger.info(f"Language detection completed for {len(items)} items")
+
 # Global variable to control the main loop
 running = True
 
@@ -234,9 +250,15 @@ def main(is_daemon=False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="News Aggregator")
     parser.add_argument("--background", action="store_true", help="Run in background mode")
+    parser.add_argument("--detect-language", action="store_true", help="Detect language for existing entries")
     args = parser.parse_args()
 
-    if args.background and platform.system() != "Windows":
+    if args.detect_language:
+        conn = sqlite3.connect(load_config('config.json')['database_path'])
+        setup_logging(False)
+        detect_language_for_existing_entries(conn)
+        conn.close()
+    elif args.background and platform.system() != "Windows":
         try:
             import daemon
             with daemon.DaemonContext():
