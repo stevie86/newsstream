@@ -55,7 +55,19 @@ A compact news aggregator that fetches articles from various RSS sources, proces
    python news_aggregator.py
    ```
 
+   This will run the script in the foreground.
+
+2. To run the script in the background:
+   ```
+   python news_aggregator.py --background
+   ```
+
+   On Unix-like systems, this will use the python-daemon library to run the script as a daemon process.
+   On Windows, it will run in the foreground but can be minimized.
+
 The script fetches news continuously based on the configured interval.
+
+Note: When running in the background, logs will be written to 'news_aggregator.log' instead of being printed to the console.
 
 ## Development
 
