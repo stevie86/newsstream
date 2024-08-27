@@ -9,7 +9,6 @@ import os
 import shutil
 import logging
 from logging.handlers import RotatingFileHandler
-from dspy_utils import dspy_extract_topic, dspy_detect_language
 import argparse
 import signal
 import sys
@@ -136,28 +135,20 @@ def check_and_update_db_structure(conn, db_path):
 
 def detect_language(text):
     try:
-        return dspy_detect_language(text)
+        return detect(text)
     except:
-        # Fallback to the original method if DSPy fails
-        try:
-            return detect(text)
-        except:
-            return 'unknown'
+        return 'unknown'
 
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from collections import Counter
 
 def extract_topic(text):
-    try:
-        return dspy_extract_topic(text)
-    except:
-        # Fallback to the original method if DSPy fails
-        tokens = word_tokenize(text.lower())
-        stop_words = set(stopwords.words('english'))
-        tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
-        word_freq = Counter(tokens)
-        return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
+    tokens = word_tokenize(text.lower())
+    stop_words = set(stopwords.words('english'))
+    tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
+    word_freq = Counter(tokens)
+    return word_freq.most_common(1)[0][0] if word_freq else 'unknown'
 
 def insert_or_update_news_item(conn, item, source):
     try:
