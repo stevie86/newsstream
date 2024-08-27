@@ -1,6 +1,5 @@
 import json
 import sqlite3
-import feedparser
 from datetime import datetime
 import time
 import logging
@@ -11,15 +10,13 @@ import sys
 import daemon
 from dotenv import load_dotenv
 import os
-import openai
 from contextlib import contextmanager
 
-from src.aggregator import fetch_rss_feed, process_news_item, detect_language, extract_topic
+from src.aggregator import fetch_rss_feed, process_news_item
 from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
 from src.summarizer import summarize_article
 from src.script_generator import ScriptGenerator
 from src.validator import validate_script
-from route_config import router
 
 # Global variable to control the main loop
 running = True
@@ -49,33 +46,36 @@ def signal_handler(signum, frame):
     running = False
 
 def load_config(file_path):
-    with open(file_path, 'r') as f:
-        return json.load(f)
+    try:
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing config file: {e}")
+        sys.exit(1)
+    except FileNotFoundError:
+        logger.error(f"Config file not found: {file_path}")
+        sys.exit(1)
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Get the OpenAI API key
+# Get the OpenAI API key from environment variable
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-@contextmanager
-def set_openai_api_key():
-    """Context manager to set and reset the OpenAI API key."""
-    original_api_key = openai.api_key
-    openai.api_key = OPENAI_API_KEY
-    try:
-        yield
-    finally:
-        openai.api_key = original_api_key
+if not OPENAI_API_KEY:
+    logger.error("OPENAI_API_KEY not found in environment variables")
+    sys.exit(1)
 
 def fetch_and_store_news(conn, sources):
     for source in sources:
         logger.info(f"Fetching news from: {source['name']}")
-        feed = feedparser.parse(source['url'])
-        logger.info(f"Found {len(feed.entries)} entries")
-        for entry in feed.entries:
-            processed_item = process_news_item(entry, source['name'])
-            insert_or_update_news_item(conn, processed_item)
+        entries = fetch_rss_feed(source['url'])
+        logger.info(f"Found {len(entries)} entries")
+        for entry in entries:
+            try:
+                processed_item = process_news_item(entry, source['name'])
+                insert_or_update_news_item(conn, processed_item)
+            except Exception as e:
+                logger.error(f"Error processing entry from {source['name']}: {e}")
 
 def main(is_daemon=False):
     global logger
@@ -90,9 +90,13 @@ def main(is_daemon=False):
     logger.info(f"Number of sources: {len(sources)}")
     logger.info(f"Update interval: {update_interval} seconds")
 
-    conn = create_connection(db_path)
-    create_table(conn)
-    check_and_update_db_structure(conn, db_path)
+    try:
+        conn = create_connection(db_path)
+        create_table(conn)
+        check_and_update_db_structure(conn, db_path)
+    except sqlite3.Error as e:
+        logger.error(f"Database error: {e}")
+        sys.exit(1)
 
     # Set up signal handlers
     signal.signal(signal.SIGTERM, signal_handler)
