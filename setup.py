@@ -1,6 +1,6 @@
 import json
 import requests
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 import os
 
 def get_feed_info() -> Dict[str, str]:
