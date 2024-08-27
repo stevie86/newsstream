@@ -232,7 +232,7 @@ if __name__ == "__main__":
 
     if args.background and platform.system() != "Windows":
         try:
-            import platform
+            import daemon
             with daemon.DaemonContext():
                 main(is_daemon=True)
         except ImportError:
