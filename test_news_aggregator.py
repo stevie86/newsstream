@@ -1,14 +1,19 @@
 import unittest
 import json
 import sqlite3
+import logging
 from news_aggregator import (
     load_config,
     create_table,
     detect_language,
     extract_topic,
     insert_or_update_news_item,
+    DB_VERSION,
 )
 from unittest.mock import patch, MagicMock
+
+# Set up a null logger for testing
+logging.getLogger('news_aggregator').addHandler(logging.NullHandler())
 
 class TestNewsAggregator(unittest.TestCase):
 
