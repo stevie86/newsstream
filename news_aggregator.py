@@ -134,27 +134,10 @@ def check_and_update_db_structure(conn, db_path):
         logger.info("Database structure updated successfully")
 
 from langdetect import detect, LangDetectException
-import cld3
-
 def detect_language(text):
     try:
-        # First, try langdetect
-        lang_detect_result = detect(text)
-        
-        # Then, try cld3
-        cld3_result = cld3.get_language(text)
-        
-        # If both agree, return the result
-        if lang_detect_result == cld3_result.language:
-            return lang_detect_result
-        
-        # If they disagree, prefer cld3 if it's confident
-        if cld3_result.is_reliable and cld3_result.probability > 0.9:
-            return cld3_result.language
-        
-        # Otherwise, return langdetect result
-        return lang_detect_result
-    except (LangDetectException, Exception) as e:
+        return detect(text)
+    except LangDetectException as e:
         logger.error(f"Error detecting language: {e}")
         return 'unknown'
 
