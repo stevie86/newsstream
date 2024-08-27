@@ -15,7 +15,7 @@ A compact news aggregator that fetches articles from various RSS sources, proces
 ## Requirements
 
 - Python 3.6+
-- Dependencies: feedparser, langdetect, nltk, requests, lxml[html_clean]
+- Dependencies: feedparser, langdetect, nltk, python-daemon, python-dotenv
 
 ## Installation
 
@@ -72,12 +72,14 @@ python -m unittest test_news_aggregator.py
 
 ## Future Enhancements
 
-- Implement error handling for RSS parsing
+- Improve error handling for RSS parsing
 - Add periodic database cleanup
 - Create a web interface for viewing aggregated news
 - Implement search functionality
 - Add export options for news items
 - Develop user preferences for news filtering
+- Integrate with external APIs for additional data enrichment
+- Implement multi-threading for faster processing of multiple feeds
 
 ## Contributing
 
