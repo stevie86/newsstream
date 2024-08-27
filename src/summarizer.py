@@ -1,8 +1,13 @@
+import logging
+from src.logger import setup_logging
+
 try:
     from route_config import router
 except ImportError:
     print("Warning: route_config module not found. Using fallback summarization.")
     router = None
+
+logger = setup_logging()
 
 def summarize_article(article, router=None):
     if router:
