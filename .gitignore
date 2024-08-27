@@ -163,3 +163,7 @@ cython_debug/
 .aider*
 # Configuration file
 config.json
+
+# Database files
+*.db
+*.db-journal
