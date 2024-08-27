@@ -56,12 +56,13 @@ def summarize_article(title, description, source):
 def generate_youtube_short_script(conn):
     """Generate a script for a YouTube Short based on top news articles."""
     articles = get_top_articles(conn)
-    script = "Today's Top News:\n\n"
+    script = "Hey there, news junkies! 👋 Let's dive into today's top stories:\n\n"
     
-    for article in articles:
+    for i, article in enumerate(articles, 1):
         title, description, source = article
         summary = summarize_article(title, description, source)
-        script += f"• {summary}\n"
+        script += f"{i}. 🔥 {summary}\n\n"
     
-    script += "\nThat's all for today's news update! Like and subscribe for more daily news shorts!"
+    script += "That's all for now! 🎬 Remember to like, subscribe, and hit that notification bell for your daily dose of news shorts! 🔔\n"
+    script += "See you tomorrow for more breaking stories! 👋"
     return script
