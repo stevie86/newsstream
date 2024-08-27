@@ -6,6 +6,15 @@ logger = logging.getLogger(__name__)
 
 DB_VERSION = 2
 
+import sqlite3
+import shutil
+import logging
+from datetime import datetime
+
+logger = logging.getLogger('news_aggregator')
+
+DB_VERSION = 2
+
 def create_connection(db_path):
     return sqlite3.connect(db_path)
 
@@ -20,13 +29,6 @@ def create_table(conn):
                      language TEXT,
                      topics TEXT,
                      last_updated TEXT)''')
-    
-    try:
-        conn.execute("ALTER TABLE news_items ADD COLUMN last_updated TEXT")
-        logger.info("Added 'last_updated' column to news_items table")
-    except sqlite3.OperationalError as e:
-        if "duplicate column name" not in str(e):
-            logger.error(f"Error adding 'last_updated' column: {e}")
     
     conn.execute('''CREATE TABLE IF NOT EXISTS db_version
                     (version INTEGER)''')
@@ -100,3 +102,19 @@ def insert_or_update_news_item(conn, item):
         logger.info(f"Inserted new item: {item['title']}")
     
     conn.commit()
+
+def detect_language_for_existing_entries(conn, detect_language_func):
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, description FROM news_items WHERE language IS NULL OR language = 'unknown'")
+    items = cursor.fetchall()
+    
+    for item in items:
+        item_id, title, description = item
+        text = f"{title} {description}"
+        language = detect_language_func(text)
+        
+        conn.execute("UPDATE news_items SET language = ? WHERE id = ?", (language, item_id))
+        logger.info(f"Updated language for item {item_id}: {language}")
+    
+    conn.commit()
+    logger.info(f"Language detection completed for {len(items)} items")

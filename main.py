@@ -13,7 +13,7 @@ import os
 import platform
 from contextlib import contextmanager
 
-from src.aggregator import fetch_rss_feed, process_news_item
+from src.aggregator import fetch_and_store_news
 from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
 from src.summarizer import generate_youtube_short_script
 from src.summarizer import summarize_article
@@ -23,25 +23,7 @@ from src.validator import validate_script
 # Global variable to control the main loop
 running = True
 
-def setup_logging(is_daemon=False):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    # Always add a file handler, regardless of daemon mode
-    file_handler = RotatingFileHandler('news_aggregator.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-    logger.addHandler(file_handler)
-
-    # Add console handler only if not in daemon mode
-    if not is_daemon:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-    return logger
+from src.logger import setup_logging
 
 # Ensure the logger is set up at the module level
 logger = setup_logging()

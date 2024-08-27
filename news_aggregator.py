@@ -42,23 +42,7 @@ running = True
 # Initialize logger at the module level
 logger = logging.getLogger(__name__)
 
-def setup_logging(is_daemon=False):
-    logger = logging.getLogger(__name__)
-    logger.setLevel(logging.DEBUG)
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-    if is_daemon:
-        file_handler = RotatingFileHandler('news_aggregator.log', maxBytes=10*1024*1024, backupCount=5, encoding='utf-8')
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-        logger.addHandler(file_handler)
-    else:
-        console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.DEBUG)
-        console_handler.setFormatter(formatter)
-        logger.addHandler(console_handler)
-
-    return logger
+from src.logger import setup_logging
 
 # Signal handler for graceful shutdown
 def signal_handler(signum, frame):
@@ -142,92 +126,9 @@ def check_and_update_db_structure(conn, db_path):
         conn.commit()
         logger.info("Database structure updated successfully")
 
-from langdetect import detect, LangDetectException
-def detect_language(text):
-    try:
-        detected = detect(text)
-        # Special case for "Hola mundo!" which should be Spanish
-        if text.lower().strip() == "hola mundo!":
-            return 'es'
-        return detected
-    except LangDetectException as e:
-        logger.error(f"Error detecting language: {e}")
-        return 'unknown'
-
-from nltk.tokenize import word_tokenize
-from nltk.corpus import stopwords
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.preprocessing import normalize
-import numpy as np
-
-def extract_topics(text, num_topics=3):
-    # Tokenize and preprocess the text
-    tokens = word_tokenize(text.lower())
-    stop_words = set(stopwords.words('english'))
-    tokens = [word for word in tokens if word.isalnum() and word not in stop_words]
-    processed_text = ' '.join(tokens)
-
-    # Create and fit TF-IDF vectorizer
-    vectorizer = TfidfVectorizer(max_features=1000)
-    tfidf_matrix = vectorizer.fit_transform([processed_text])
-
-    # Get feature names (words)
-    feature_names = vectorizer.get_feature_names_out()
-
-    # Normalize the TF-IDF matrix
-    normalized_tfidf = normalize(tfidf_matrix)
-
-    # Get the top N topics
-    top_n_indices = normalized_tfidf.toarray()[0].argsort()[-num_topics:][::-1]
-    top_topics = [feature_names[i] for i in top_n_indices]
-
-    return ','.join(top_topics) if top_topics else 'unknown'
-
-def insert_or_update_news_item(conn, item, source):
-    try:
-        description = getattr(item, 'description', '')
-        language = detect_language(item.title + ' ' + description)
-        topics = extract_topics(item.title + ' ' + description)
-        
-        logger.debug(f"Processing item: {item.title}, Source: {source}, Language: {language}, Topics: {topics}")
-        
-        pub_date = getattr(item, 'published', datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM news_items WHERE link = ?", (item.link,))
-        existing_item = cursor.fetchone()
-        
-        if existing_item:
-            conn.execute('''UPDATE news_items 
-                            SET title = ?, description = ?, pub_date = ?, 
-                                source = ?, language = ?, topics = ?, last_updated = ?
-                            WHERE link = ?''',
-                         (item.title, description, pub_date, source, 
-                          language, topics, current_time, item.link))
-            logger.info(f"Updated existing item: {item.title}")
-        else:
-            conn.execute('''INSERT INTO news_items 
-                            (title, link, description, pub_date, source, language, topics, last_updated)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)''',
-                         (item.title, item.link, description, pub_date, 
-                          source, language, topics, current_time))
-            logger.info(f"Inserted new item: {item.title}")
-        
-        conn.commit()
-    except AttributeError as e:
-        logger.error(f"Error processing item: {e}")
-        logger.error(f"Item attributes: {vars(item)}")
-    except sqlite3.Error as e:
-        logger.error(f"Database error: {e}")
-
-def fetch_and_store_news(conn, sources):
-    for source in sources:
-        logger.info(f"Fetching news from: {source['name']}")
-        feed = feedparser.parse(source['url'])
-        logger.info(f"Found {len(feed.entries)} entries")
-        for entry in feed.entries:
-            insert_or_update_news_item(conn, entry, source['name'])
+from src.aggregator import fetch_and_store_news
+from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item, detect_language_for_existing_entries
+from src.language_detection import detect_language
 
 def main(is_daemon=False):
     global logger, running
