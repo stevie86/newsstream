@@ -13,7 +13,7 @@ import os
 import platform
 from contextlib import contextmanager
 
-from src.aggregator import fetch_and_store_news
+from src.aggregator import fetch_and_store_news, fetch_rss_feed, process_news_item
 from src.database import create_connection, create_table, check_and_update_db_structure, insert_or_update_news_item
 from src.summarizer import generate_youtube_short_script
 from src.summarizer import summarize_article
