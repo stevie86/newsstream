@@ -35,17 +35,26 @@ def get_multiple_feeds(existing_feeds: List[Dict[str, str]]) -> List[Dict[str, s
     print("You can add multiple feeds. Enter 'done' when finished.")
     
     while True:
-        feed = get_feed_info()
+        user_input = input("Enter the URL of the RSS feed (or 'done' to finish): ").strip()
+        if user_input.lower() == 'done':
+            break
+        
+        feed = get_feed_info(user_input)
         if validate_url(feed["url"]):
             feeds.append(feed)
             print(f"Added {feed['name']} successfully!")
         else:
             print("Invalid or inaccessible URL. Please try again.")
-        
-        if input("Enter 'done' to finish, or press Enter to add another feed: ").lower().strip() == 'done':
-            break
     
     return feeds
+
+def get_feed_info(url: str = "") -> Dict[str, str]:
+    """Get RSS feed information from user input."""
+    if not url:
+        url = input("Enter the URL of the RSS feed: ").strip()
+    custom_name = input("Enter a custom name for this feed (press Enter to use default): ").strip()
+    name = custom_name if custom_name else url.split('//')[1].split('/')[0]
+    return {"name": name, "url": url}
 
 def load_existing_config() -> Dict[str, Any]:
     """Load existing configuration if available."""
